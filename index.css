@@ -553,6 +553,61 @@ textarea {
   font-family: monospace;
   color: #c7254e;
 }
+.api-key-dialog .important-note {
+  background-color: #fff3cd;
+  color: #856404;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+.api-key-dialog .setup-steps {
+  text-align: left;
+  list-style-position: inside;
+  padding-left: 0;
+  margin-bottom: 0;
+}
+.api-key-dialog .setup-steps li {
+  margin-bottom: 12px;
+}
+
+
+/* Error Display */
+#error-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #721c24;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  padding: 32px;
+  border-radius: var(--border-radius);
+}
+#error-display.hidden {
+  display: none !important;
+}
+#error-display svg {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 16px;
+  stroke: #721c24;
+}
+#error-display h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #721c24;
+}
+#error-display p {
+  max-width: 450px;
+  margin-bottom: 0;
+}
+#error-display .error-tip {
+  margin-top: 16px;
+  font-size: 14px;
+  color: #58151c;
+}
 
 
 /* Footer */

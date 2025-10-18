@@ -226,6 +226,12 @@
           <h3>Your Creations Await</h3>
           <p>Fill out the form, click 'Generate', and watch your ideas come to life right here.</p>
         </div>
+        <div id="error-display" class="hidden">
+          <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          <h3>Generation Failed</h3>
+          <p id="error-message">An unknown error occurred.</p>
+          <p class="error-tip">Please check your browser's developer console for more details.</p>
+        </div>
       </section>
     </div>
   </main>
@@ -244,15 +250,15 @@
 
   <div id="api-key-modal" class="modal-overlay hidden">
     <div class="api-key-dialog">
-      <h3>Final Step: Add Your API Key</h3>
-      <p>Welcome to NapNox Studio! To activate the AI features, you need to add your personal Google AI Studio API key.</p>
+      <h3>API Key Required</h3>
+      <p>Welcome to NapNox Studio! To activate the AI, you must provide your own valid Google AI Studio API key.</p>
+      <p class="important-note"><strong>The previous keys did not work. This is the final step to make the app functional.</strong></p>
       <ol class="setup-steps">
-        <li><strong>Get your key:</strong> Go to <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">aistudio.google.com</a> and click "Create API key".</li>
-        <li><strong>Open the code:</strong> In your project, open the file named <code>index.tsx</code>.</li>
-        <li><strong>Paste your key:</strong> Replace the placeholder text <code>"YOUR_API_KEY_PLACEHOLDER"</code> with your actual key.</li>
-        <li><strong>Deploy again:</strong> Save the file, commit the change to GitHub, and redeploy your application.</li>
+        <li>Go to <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">aistudio.google.com</a> to create a new, free API key.</li>
+        <li>In your project code, open the file: <code>index.tsx</code>.</li>
+        <li>Find the line <code>const API_KEY = "YOUR_API_KEY_HERE";</code> and replace the placeholder with your new key.</li>
+        <li>Save the file and redeploy your application.</li>
       </ol>
-      <p>This is a one-time setup to connect the app to your own AI account.</p>
     </div>
   </div>
 

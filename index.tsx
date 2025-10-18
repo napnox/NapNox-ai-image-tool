@@ -6,9 +6,10 @@ import { GoogleGenAI, Type, Modality } from "@google/genai";
 
 // =================================================================================
 // --- API KEY CONFIGURATION ---
-// The application is now configured with the second API key you provided.
+// IMPORTANT: You must replace this placeholder with your own Google AI Studio API key.
+// Get a key from https://aistudio.google.com/app/apikey
 // =================================================================================
-const API_KEY = "AIzaSyAl7r0GWxLgAVUkeO89Lu4LaBawi-jLZIY";
+const API_KEY = "YOUR_API_KEY_HERE";
 
 
 // --- DOM ELEMENT REFERENCES ---
@@ -32,15 +33,22 @@ const fullscreenImage = document.getElementById('fullscreen-image') as HTMLImage
 const closeModalBtn = document.getElementById('close-modal-btn') as HTMLButtonElement;
 const zoomInBtn = document.getElementById('zoom-in-btn') as HTMLButtonElement;
 const zoomOutBtn = document.getElementById('zoom-out-btn') as HTMLButtonElement;
+const apiKeyModal = document.getElementById('api-key-modal');
+const errorDisplay = document.getElementById('error-display');
+const errorMessage = document.getElementById('error-message');
 
 
 // --- GEMINI API SETUP ---
 let ai: GoogleGenAI | null = null;
 try {
-  ai = new GoogleGenAI({ apiKey: API_KEY });
+  // Do not initialize if the key is the placeholder
+  if (API_KEY !== "YOUR_API_KEY_HERE") {
+    ai = new GoogleGenAI({ apiKey: API_KEY });
+  }
 } catch (error) {
     console.error("AI Initialization Error:", error);
-    alert("Could not initialize the AI client. The embedded API key might be invalid or restricted. Please check the console for details.");
+    // This error is less critical now, but good to have.
+    // The main check happens on form submission.
     generateBtn.disabled = true;
     generateBtn.textContent = "Configuration Error";
 }
@@ -128,7 +136,14 @@ function attachEventListeners() {
         }
     });
 
-    // Modal listeners
+    // API key modal can be closed by clicking the overlay
+    apiKeyModal?.addEventListener('click', (e) => {
+        if (e.target === apiKeyModal) {
+            apiKeyModal.classList.add('hidden');
+        }
+    });
+
+    // Fullscreen modal listeners
     if (fullscreenModal && fullscreenImage && closeModalBtn && zoomInBtn && zoomOutBtn) {
         closeModalBtn.addEventListener('click', closeModal);
         fullscreenModal.addEventListener('click', (e) => {
@@ -185,10 +200,25 @@ function attachEventListeners() {
  */
 async function handleFormSubmit(event: Event) {
     event.preventDefault();
-    
-    if (!ai || generateBtn.disabled) {
-        alert("Application is not ready. The API key might be invalid.");
+
+    // CRITICAL: Check for placeholder API Key on submit
+    if (API_KEY === "YOUR_API_KEY_HERE") {
+        apiKeyModal?.classList.remove('hidden');
         return;
+    }
+    
+    // Lazy initialization of AI client if it hasn't been already
+    if (!ai) {
+        try {
+            ai = new GoogleGenAI({ apiKey: API_KEY });
+        } catch (error) {
+            console.error("AI Initialization Error on submit:", error);
+            if (errorMessage && errorDisplay) {
+                errorMessage.textContent = "The API key provided appears to be malformed or invalid. Please check the key and try again.";
+                errorDisplay.classList.remove('hidden');
+            }
+            return;
+        }
     }
 
     // Form validation
@@ -221,7 +251,12 @@ async function handleGeneration() {
 
   } catch (error) {
     console.error("An error occurred during generation:", error);
-    alert("An error occurred. Your API key might be invalid or there could be a network issue. Please check the console for details.");
+    if (errorMessage && errorDisplay) {
+        errorMessage.textContent = "The API key might be invalid, expired, or your Google Cloud project may not have billing enabled. Please verify your key is correct and active.";
+        errorDisplay.classList.remove('hidden');
+    } else {
+        alert("An error occurred. Your API key might be invalid or there could be a network issue. Please check the console for details.");
+    }
     resultsPlaceholder?.classList.remove('hidden');
   } finally {
     setLoading(false);
@@ -250,15 +285,12 @@ async function generateCreativePrompts(): Promise<string[]> {
     .map(el => {
         const input = el as HTMLSelectElement | HTMLTextAreaElement;
         const label = form.querySelector(`label[for="${input.id}"]`)?.textContent || input.id;
-        // Exclude the user prompt textarea if the mode is 'image' or if it's empty and not required
         if (input.id === 'user-prompt' && (generationSource === 'image' || !input.value.trim())) {
              return null;
         }
-        // Exclude generation source from the prompt details sent to the AI
         if (input.name === 'generation-source') {
             return null;
         }
-        // Emphasize aspect ratio in the prompt details as well
         if (input.id === 'aspect-ratio') {
             return `${label}: "${input.value}" (This is a strict requirement).`;
         }
@@ -345,7 +377,6 @@ async function handleRegenerate(card: HTMLElement, prompt: string) {
         const newImageUrl = `data:image/png;base64,${imageBase64}`;
         img.src = newImageUrl;
         
-        // Update download, view, and share buttons to use the new image
         const downloadBtn = card.querySelector('.download-btn') as HTMLButtonElement;
         downloadBtn.onclick = () => {
             const link = document.createElement('a');
@@ -392,7 +423,6 @@ async function shareImage(url: string, text: string) {
         }
     } catch (error) {
         console.error('Error sharing:', error);
-        // Do not show an alert if the user cancels the share dialog.
         if ((error as Error).name !== 'AbortError') {
             alert('An error occurred while trying to share.');
         }
@@ -401,6 +431,13 @@ async function shareImage(url: string, text: string) {
 
 
 // --- UI & HELPER FUNCTIONS ---
+
+/**
+ * Hides any visible error messages.
+ */
+function hideError() {
+    errorDisplay?.classList.add('hidden');
+}
 
 /**
  * Updates form labels and required fields based on the selected generation source.
@@ -431,17 +468,16 @@ function setLoading(isLoading: boolean) {
     resultsPanel.classList.remove('has-results');
     resultsPlaceholder?.classList.add('hidden');
     resultsGrid.innerHTML = '';
+    hideError(); // Hide any previous errors when starting a new generation
     
-    // Start tip cycling
     const showRandomTip = () => {
         const randomIndex = Math.floor(Math.random() * creativeTips.length);
         loaderTip.textContent = creativeTips[randomIndex];
     };
-    showRandomTip(); // Show one immediately
+    showRandomTip();
     tipInterval = window.setInterval(showRandomTip, 3500);
 
   } else {
-      // Stop tip cycling
       if (tipInterval) {
           clearInterval(tipInterval);
           tipInterval = null;
@@ -595,7 +631,6 @@ function openModal(imageUrl: string) {
 
 /**
  * Main application entry point.
- * Sets up the UI and attaches event listeners.
  */
 function initializeApp() {
     updateFormUI();
