@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NapNox Studio | AI Image Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="index.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "@google/genai": "https://esm.sh/@google/genai@^0.14.0"
+      }
+    }
+  </script>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <span class="logo">NapNox <strong>Studio</strong></span>
+    </div>
+  </header>
+
+  <main>
+    <div class="container main-container">
+      <section id="controls-panel">
+        <form id="prompt-form" aria-labelledby="form-title">
+          <h2 id="form-title">✨ Create Your Masterpiece</h2>
+          
+          <div class="form-group image-upload-group">
+            <label id="image-upload-label" for="image-upload">1. Upload Your Photo</label>
+            <div class="image-preview-wrapper" role="button" tabindex="0" aria-label="Upload image">
+                <img id="image-preview" src="#" alt="Your uploaded image preview" class="hidden">
+                <button id="remove-image-btn" class="remove-image-btn hidden" aria-label="Remove uploaded image">&times;</button>
+                <div id="upload-placeholder">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    <p>Click to upload JPG or PNG</p>
+                </div>
+            </div>
+            <input type="file" id="image-upload" accept="image/jpeg, image/png">
+          </div>
+
+          <div class="form-group">
+            <label id="user-prompt-label" for="user-prompt">2. Describe Your Vision</label>
+            <textarea id="user-prompt" placeholder="e.g., Make me look like a cyberpunk hero" rows="3"></textarea>
+          </div>
+          
+          <h3>🎨 Customize With Filters</h3>
+          <div class="filters-grid">
+            <!-- Generation Source -->
+            <div class="form-group full-width">
+                <label for="generation-source-fieldset">Generation Source</label>
+                <div id="generation-source-fieldset" class="segmented-control">
+                    <input type="radio" id="source-hybrid" name="generation-source" value="hybrid" checked>
+                    <label for="source-hybrid">Image + Prompt</label>
+                    <input type="radio" id="source-prompt" name="generation-source" value="prompt">
+                    <label for="source-prompt">Prompt Only</label>
+                    <input type="radio" id="source-image" name="generation-source" value="image">
+                    <label for="source-image">Image Only</label>
+                </div>
+            </div>
+            <!-- Resolution -->
+             <div class="form-group">
+                <label for="resolution">Resolution</label>
+                <select id="resolution">
+                    <option>1024x1024</option>
+                    <option>512x512</option>
+                    <option>2048x2048</option>
+                </select>
+            </div>
+            <!-- Art Style -->
+            <div class="form-group">
+              <label for="art-style">Art Style</label>
+              <select id="art-style">
+                <option selected>Realistic</option>
+                <option>Digital Art</option>
+                <option>Cinematic</option>
+                <option>3D Render</option>
+                <option>Watercolor</option>
+                <option>Pencil Sketch</option>
+              </select>
+            </div>
+            <!-- Lighting Style -->
+            <div class="form-group">
+              <label for="lighting-style">Lighting Style</label>
+              <select id="lighting-style">
+                <option selected>Soft Light</option>
+                <option>Natural</option>
+                <option>Studio</option>
+                <option>Dramatic</option>
+                <option>Golden Hour</option>
+              </select>
+            </div>
+            <!-- Color Tone -->
+            <div class="form-group">
+              <label for="color-tone">Color Tone</label>
+              <select id="color-tone">
+                <option>Cool</option>
+                <option>Warm</option>
+                <option>Neutral</option>
+                <option selected>Vibrant</option>
+                <option>Muted</option>
+              </select>
+            </div>
+            <!-- Background Type -->
+            <div class="form-group">
+              <label for="background-type">Background Type</label>
+              <select id="background-type">
+                <option>Landscape</option>
+                <option>Office</option>
+                <option>Studio</option>
+                <option>Abstract</option>
+                <option>None (transparent)</option>
+              </select>
+            </div>
+            <!-- Camera Angle -->
+            <div class="form-group">
+                <label for="camera-angle">Camera Angle</label>
+                <select id="camera-angle">
+                    <option selected>Portrait</option>
+                    <option>Side Profile</option>
+                    <option>Wide Shot</option>
+                    <option>Top View</option>
+                </select>
+            </div>
+            <!-- Facial Expression -->
+            <div class="form-group">
+                <label for="facial-expression">Facial Expression</label>
+                <select id="facial-expression">
+                    <option>Confident</option>
+                    <option>Smiling</option>
+                    <option>Focused</option>
+                    <option selected>Natural</option>
+                    <option>Serious</option>
+                </select>
+            </div>
+            <!-- Age Adjustment -->
+            <div class="form-group">
+                <label for="age-adjustment">Age Adjustment</label>
+                <select id="age-adjustment">
+                    <option selected>Same</option>
+                    <option>Younger</option>
+                    <option>Older</option>
+                </select>
+            </div>
+            <!-- Gender Swap -->
+            <div class="form-group">
+                <label for="gender-swap">Gender Swap</label>
+                <select id="gender-swap">
+                    <option selected>Off</option>
+                    <option>On</option>
+                </select>
+            </div>
+            <!-- Style Transfer -->
+            <div class="form-group">
+                <label for="style-transfer">Style Transfer</label>
+                <select id="style-transfer">
+                    <option selected>None</option>
+                    <option>Van Gogh</option>
+                    <option>Pixar</option>
+                    <option>Cyberpunk</option>
+                    <option>Fashion Editorial</option>
+                </select>
+            </div>
+             <!-- Platform -->
+            <div class="form-group">
+                <label for="platform">Platform</label>
+                <select id="platform">
+                    <option selected>General Purpose</option>
+                    <option>Social Media Post</option>
+                    <option>Website Banner</option>
+                    <option>Print Quality</option>
+                </select>
+            </div>
+            <!-- Number of Variations -->
+             <div class="form-group">
+                <label for="num-variations">Number of Variations</label>
+                <select id="num-variations">
+                    <option>1</option>
+                    <option>2</option>
+                    <option selected>4</option>
+                    <option>6</option>
+                </select>
+            </div>
+            <!-- Aspect Ratio -->
+            <div class="form-group">
+                <label for="aspect-ratio">Aspect Ratio</label>
+                <select id="aspect-ratio">
+                    <option>1:1</option>
+                    <option selected>16:9</option>
+                    <option>9:16</option>
+                    <option>3:2</option>
+                </select>
+            </div>
+            <!-- Prompt Focus -->
+            <div class="form-group">
+                <label for="prompt-focus">Prompt Focus</label>
+                <select id="prompt-focus">
+                    <option selected>Balanced</option>
+                    <option>Realistic</option>
+                    <option>Artistic</option>
+                    <option>Extreme Creative</option>
+                </select>
+            </div>
+          </div>
+
+          <button type="submit" id="generate-btn">🎨 Generate</button>
+        </form>
+      </section>
+      
+      <section id="results-panel" aria-live="polite">
+        <h2>Your Creations</h2>
+        <div id="loader" class="hidden">
+            <div class="spinner"></div>
+            <p>Creating your AI masterpiece...</p>
+            <p id="loader-tip"></p>
+            <span>This may take a moment.</span>
+        </div>
+        <div id="results-grid">
+          <!-- Result cards will be injected here by JavaScript -->
+        </div>
+        <div id="results-placeholder">
+          <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 6.5C15.5 5.25 14.75 4 13.5 4h-5C7.25 4 6.5 5.25 6.5 6.5v11C6.5 18.75 7.25 20 8.5 20h5c1.25 0 2-1.25 2-2.5v-11z"/><path d="M9.5 6h2"/><path d="M9.5 18h2"/><path d="M15.5 10h-11"/><path d="M15.5 14h-11"/></svg>
+          <h3>Your Creations Await</h3>
+          <p>Fill out the form, click 'Generate', and watch your ideas come to life right here.</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+  </footer>
+
+  <div id="fullscreen-modal" class="modal-overlay hidden">
+    <button id="close-modal-btn" class="close-modal-btn" aria-label="Close fullscreen view">&times;</button>
+    <div class="zoom-controls">
+        <button id="zoom-in-btn" class="zoom-btn" title="Zoom In">+</button>
+        <button id="zoom-out-btn" class="zoom-btn" title="Zoom Out">−</button>
+    </div>
+    <img src="" alt="Fullscreen generated image" id="fullscreen-image">
+  </div>
+
+  <script type="module" src="index.tsx"></script>
+</body>
+</html>
