@@ -6,9 +6,9 @@ import { GoogleGenAI, Type, Modality } from "@google/genai";
 
 // =================================================================================
 // --- API KEY CONFIGURATION ---
-// The application is now configured with the API key you provided.
+// The application is now configured with the second API key you provided.
 // =================================================================================
-const API_KEY = "AIzaSyAdYhYqZc4F3kBHF8sPgb-DU3ZipWSiYJY";
+const API_KEY = "AIzaSyAl7r0GWxLgAVUkeO89Lu4LaBawi-jLZIY";
 
 
 // --- DOM ELEMENT REFERENCES ---
