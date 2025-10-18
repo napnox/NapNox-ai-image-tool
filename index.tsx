@@ -5,13 +5,10 @@
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 
 // =================================================================================
-// --- IMPORTANT: API KEY CONFIGURATION ---
-// To use this application, you must get a free API key from Google AI Studio.
-// 1. Visit https://aistudio.google.com/app/apikey
-// 2. Click "Create API key"
-// 3. Paste your new key here, replacing the "YOUR_API_KEY_PLACEHOLDER" text.
+// --- API KEY CONFIGURATION ---
+// The application is now configured with the API key you provided.
 // =================================================================================
-const API_KEY = "YOUR_API_KEY_PLACEHOLDER";
+const API_KEY = "AIzaSyAdYhYqZc4F3kBHF8sPgb-DU3ZipWSiYJY";
 
 
 // --- DOM ELEMENT REFERENCES ---
@@ -35,11 +32,18 @@ const fullscreenImage = document.getElementById('fullscreen-image') as HTMLImage
 const closeModalBtn = document.getElementById('close-modal-btn') as HTMLButtonElement;
 const zoomInBtn = document.getElementById('zoom-in-btn') as HTMLButtonElement;
 const zoomOutBtn = document.getElementById('zoom-out-btn') as HTMLButtonElement;
-const apiKeyModal = document.getElementById('api-key-modal');
 
 
 // --- GEMINI API SETUP ---
 let ai: GoogleGenAI | null = null;
+try {
+  ai = new GoogleGenAI({ apiKey: API_KEY });
+} catch (error) {
+    console.error("AI Initialization Error:", error);
+    alert("Could not initialize the AI client. The embedded API key might be invalid or restricted. Please check the console for details.");
+    generateBtn.disabled = true;
+    generateBtn.textContent = "Configuration Error";
+}
 
 
 // --- APPLICATION STATE & CONSTANTS ---
@@ -76,7 +80,6 @@ function getGenerationSource(): 'hybrid' | 'prompt' | 'image' {
 
 /**
  * Attaches all the necessary event listeners for the application.
- * This function is called only after the API key check is successful.
  */
 function attachEventListeners() {
     // Trigger file input when the preview area is clicked
@@ -178,43 +181,15 @@ function attachEventListeners() {
 // --- CORE LOGIC ---
 
 /**
- * Initializes the AI client if it hasn't been already.
- * This is called "lazily" when the user first tries to generate an image.
- * Returns true on success, false on failure.
- */
-function initializeAiClient(): boolean {
-    if (ai) {
-        return true; // Already initialized
-    }
-
-    if (!API_KEY || API_KEY === "YOUR_API_KEY_PLACEHOLDER") {
-        apiKeyModal?.classList.remove('hidden');
-        return false;
-    }
-
-    try {
-        ai = new GoogleGenAI({ apiKey: API_KEY });
-        return true;
-    } catch (error) {
-        console.error("AI Initialization Error:", error);
-        alert("Could not initialize the AI client. Your API key might be invalid. Please check the console for details.");
-        return false;
-    }
-}
-
-
-/**
  * The main submit handler for the form.
  */
 async function handleFormSubmit(event: Event) {
     event.preventDefault();
-
-    // Lazily initialize the AI client on the first generation attempt.
-    if (!initializeAiClient()) {
-        return; // Stop if initialization fails (e.g., key is missing)
-    }
     
-    if (generateBtn.disabled) return;
+    if (!ai || generateBtn.disabled) {
+        alert("Application is not ready. The API key might be invalid.");
+        return;
+    }
 
     // Form validation
     const source = getGenerationSource();
@@ -621,7 +596,6 @@ function openModal(imageUrl: string) {
 /**
  * Main application entry point.
  * Sets up the UI and attaches event listeners.
- * AI client is initialized lazily on first use.
  */
 function initializeApp() {
     updateFormUI();
