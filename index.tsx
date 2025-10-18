@@ -4,6 +4,11 @@
 */
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 
+// --- IMPORTANT: API KEY CONFIGURATION ---
+// Replace "YOUR_API_KEY_PLACEHOLDER" with your actual Google AI Studio API key.
+const API_KEY = "YOUR_API_KEY_PLACEHOLDER";
+
+
 // --- DOM ELEMENT REFERENCES ---
 const form = document.getElementById('prompt-form') as HTMLFormElement;
 const imageUpload = document.getElementById('image-upload') as HTMLInputElement;
@@ -168,11 +173,43 @@ function attachEventListeners() {
 // --- CORE LOGIC ---
 
 /**
+ * Initializes the AI client if it hasn't been already.
+ * This is called "lazily" when the user first tries to generate an image.
+ * Returns true on success, false on failure.
+ */
+function initializeAiClient(): boolean {
+    if (ai) {
+        return true; // Already initialized
+    }
+
+    if (!API_KEY || API_KEY === "YOUR_API_KEY_PLACEHOLDER") {
+        apiKeyModal?.classList.remove('hidden');
+        return false;
+    }
+
+    try {
+        ai = new GoogleGenAI({ apiKey: API_KEY });
+        return true;
+    } catch (error) {
+        console.error("AI Initialization Error:", error);
+        alert("Could not initialize the AI client. Your API key might be invalid. Please check the console for details.");
+        return false;
+    }
+}
+
+
+/**
  * The main submit handler for the form.
  */
 async function handleFormSubmit(event: Event) {
     event.preventDefault();
-    if (!ai || generateBtn.disabled) return;
+
+    // Lazily initialize the AI client on the first generation attempt.
+    if (!initializeAiClient()) {
+        return; // Stop if initialization fails (e.g., key is missing)
+    }
+    
+    if (generateBtn.disabled) return;
 
     // Form validation
     const source = getGenerationSource();
@@ -578,24 +615,10 @@ function openModal(imageUrl: string) {
 
 /**
  * Main application entry point.
- * Checks for API Key and initializes the application.
+ * Sets up the UI and attaches event listeners.
+ * AI client is initialized lazily on first use.
  */
-// FIX: Corrected function declaration syntax and updated API key handling.
 function initializeApp() {
-    // If key is present, proceed with AI client initialization.
-    try {
-        // FIX: Initialize GoogleGenAI with API key from environment variables.
-        ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    } catch (error) {
-        console.error("AI Initialization Error:", error);
-        alert("Could not initialize the AI client. Your API key might be invalid. Please check the console for details.");
-        generateBtn.disabled = true;
-        // Also stop initialization if the client fails.
-        return;
-    }
-
-    // If we've reached this point, the AI client is ready.
-    // Now it's safe to attach all event listeners and set up the UI.
     updateFormUI();
     attachEventListeners();
 }
