@@ -25,6 +25,11 @@ const fullscreenImage = document.getElementById('fullscreen-image') as HTMLImage
 const closeModalBtn = document.getElementById('close-modal-btn') as HTMLButtonElement;
 const zoomInBtn = document.getElementById('zoom-in-btn') as HTMLButtonElement;
 const zoomOutBtn = document.getElementById('zoom-out-btn') as HTMLButtonElement;
+const apiKeyModal = document.getElementById('api-key-modal');
+
+
+// --- GEMINI API SETUP ---
+let ai: GoogleGenAI | null = null;
 
 
 // --- APPLICATION STATE & CONSTANTS ---
@@ -49,10 +54,6 @@ const creativeTips = [
 let tipInterval: number | null = null;
 
 
-// --- GEMINI API SETUP ---
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
-
 // --- HELPER FUNCTIONS ---
 
 /**
@@ -63,77 +64,134 @@ function getGenerationSource(): 'hybrid' | 'prompt' | 'image' {
     return checkedRadio.value as 'hybrid' | 'prompt' | 'image';
 }
 
+/**
+ * Attaches all the necessary event listeners for the application.
+ * This function is called only after the API key check is successful.
+ */
+function attachEventListeners() {
+    // Trigger file input when the preview area is clicked
+    imagePreviewWrapper?.addEventListener('click', () => imageUpload.click());
 
-// --- EVENT LISTENERS ---
+    // Handle image selection
+    imageUpload.addEventListener('change', async (event) => {
+        const target = event.target as HTMLInputElement;
+        const file = target.files?.[0];
+        if (file) {
+            try {
+                const { base64, mimeType } = await fileToBase64(file);
+                state.uploadedImage.base64 = base64;
+                state.uploadedImage.mimeType = mimeType;
+                imagePreview.src = `data:${mimeType};base64,${base64}`;
+                imagePreview.classList.remove('hidden');
+                uploadPlaceholder?.classList.add('hidden');
+                removeImageBtn.classList.remove('hidden');
+            } catch (error) {
+                console.error("Error reading file:", error);
+                alert("Could not read the selected file. Please try another image.");
+            }
+        }
+    });
 
-// Trigger file input when the preview area is clicked
-imagePreviewWrapper?.addEventListener('click', () => imageUpload.click());
+    // Handle image removal
+    removeImageBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent the wrapper's click event from firing
+        state.uploadedImage.base64 = null;
+        state.uploadedImage.mimeType = null;
+        imagePreview.src = '#';
+        imagePreview.classList.add('hidden');
+        uploadPlaceholder?.classList.remove('hidden');
+        removeImageBtn.classList.add('hidden');
+        imageUpload.value = ''; // Reset file input
+    });
 
-// Handle image selection
-imageUpload.addEventListener('change', async (event) => {
-  const target = event.target as HTMLInputElement;
-  const file = target.files?.[0];
-  if (file) {
-    try {
-      const { base64, mimeType } = await fileToBase64(file);
-      state.uploadedImage.base64 = base64;
-      state.uploadedImage.mimeType = mimeType;
-      imagePreview.src = `data:${mimeType};base64,${base64}`;
-      imagePreview.classList.remove('hidden');
-      uploadPlaceholder?.classList.add('hidden');
-      removeImageBtn.classList.remove('hidden');
-    } catch (error) {
-      console.error("Error reading file:", error);
-      alert("Could not read the selected file. Please try another image.");
+    // Handle form submission to generate images
+    form.addEventListener('submit', handleFormSubmit);
+
+    // Update UI based on generation source
+    form.addEventListener('change', (event) => {
+        const target = event.target as HTMLInputElement;
+        if (target.name === 'generation-source') {
+            updateFormUI();
+        }
+    });
+
+    // Modal listeners
+    if (fullscreenModal && fullscreenImage && closeModalBtn && zoomInBtn && zoomOutBtn) {
+        closeModalBtn.addEventListener('click', closeModal);
+        fullscreenModal.addEventListener('click', (e) => {
+            if (e.target === fullscreenModal) {
+                closeModal();
+            }
+        });
+        zoomInBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            modalState.zoom += 0.2;
+            fullscreenImage.classList.add('is-zoomed');
+            updateImageTransform();
+        });
+        zoomOutBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            modalState.zoom = Math.max(1, modalState.zoom - 0.2);
+            if (modalState.zoom === 1) {
+                fullscreenImage.classList.remove('is-zoomed');
+                modalState.pan.x = 0;
+                modalState.pan.y = 0;
+            }
+            updateImageTransform();
+        });
+        fullscreenImage.addEventListener('mousedown', (e) => {
+            if (modalState.zoom <= 1) return;
+            e.preventDefault();
+            modalState.isDragging = true;
+            modalState.start.x = e.clientX - modalState.pan.x;
+            modalState.start.y = e.clientY - modalState.pan.y;
+            fullscreenImage.classList.add('is-grabbing');
+        });
+        fullscreenImage.addEventListener('mousemove', (e) => {
+            if (!modalState.isDragging) return;
+            e.preventDefault();
+            modalState.pan.x = e.clientX - modalState.start.x;
+            modalState.pan.y = e.clientY - modalState.start.y;
+            updateImageTransform();
+        });
+        const stopDragging = () => {
+            if (modalState.isDragging) {
+                modalState.isDragging = false;
+                fullscreenImage.classList.remove('is-grabbing');
+            }
+        };
+        window.addEventListener('mouseup', stopDragging);
+        fullscreenImage.addEventListener('mouseleave', stopDragging);
     }
-  }
-});
-
-// Handle image removal
-removeImageBtn.addEventListener('click', (e) => {
-    e.stopPropagation(); // Prevent the wrapper's click event from firing
-    state.uploadedImage.base64 = null;
-    state.uploadedImage.mimeType = null;
-    imagePreview.src = '#';
-    imagePreview.classList.add('hidden');
-    uploadPlaceholder?.classList.remove('hidden');
-    removeImageBtn.classList.add('hidden');
-    imageUpload.value = ''; // Reset file input
-});
-
-
-// Handle form submission to generate images
-form.addEventListener('submit', async (event) => {
-  event.preventDefault();
-
-  const source = getGenerationSource();
-  if ((source === 'hybrid' || source === 'image') && !state.uploadedImage.base64) {
-    alert("Please upload an image for this generation source.");
-    return;
-  }
-  if ((source === 'hybrid' || source === 'prompt') && !userPromptTextarea.value.trim()) {
-    alert("Please describe your vision in the prompt field.");
-    return;
-  }
-  
-  await handleGeneration();
-});
-
-// Update UI based on generation source
-form.addEventListener('change', (event) => {
-    const target = event.target as HTMLInputElement;
-    if (target.name === 'generation-source') {
-        updateFormUI();
-    }
-});
-
+}
 
 // --- CORE LOGIC ---
+
+/**
+ * The main submit handler for the form.
+ */
+async function handleFormSubmit(event: Event) {
+    event.preventDefault();
+    if (!ai || generateBtn.disabled) return;
+
+    // Form validation
+    const source = getGenerationSource();
+    if ((source === 'hybrid' || source === 'image') && !state.uploadedImage.base64) {
+        alert("Please upload an image for this generation source.");
+        return;
+    }
+    if ((source === 'hybrid' || source === 'prompt') && !userPromptTextarea.value.trim()) {
+        alert("Please describe your vision in the prompt field.");
+        return;
+    }
+    await handleGeneration();
+}
 
 /**
  * Main function to handle the AI generation process.
  */
 async function handleGeneration() {
+  if (!ai) return; 
   setLoading(true);
 
   try {
@@ -146,8 +204,8 @@ async function handleGeneration() {
 
   } catch (error) {
     console.error("An error occurred during generation:", error);
-    alert("An error occurred. Please check the console for details.");
-    resultsPlaceholder.classList.remove('hidden');
+    alert("An error occurred. Your API key might be invalid or there could be a network issue. Please check the console for details.");
+    resultsPlaceholder?.classList.remove('hidden');
   } finally {
     setLoading(false);
   }
@@ -157,6 +215,8 @@ async function handleGeneration() {
  * Generates a list of creative prompts based on user input.
  */
 async function generateCreativePrompts(): Promise<string[]> {
+  if (!ai) throw new Error("AI client not initialized.");
+
   const numVariations = document.getElementById('num-variations') as HTMLSelectElement;
   const generationSource = getGenerationSource();
   const aspectRatio = (document.getElementById('aspect-ratio') as HTMLSelectElement).value;
@@ -219,6 +279,8 @@ async function generateCreativePrompts(): Promise<string[]> {
  * Generates a single image based on a prompt and optionally the uploaded image.
  */
 async function generateImage(prompt: string): Promise<{ prompt: string; imageBase64: string }> {
+  if (!ai) throw new Error("AI client not initialized.");
+
   const textPart = { text: prompt };
   const parts: ( {text: string} | {inlineData: {data: string, mimeType: string}} )[] = [textPart];
   
@@ -514,62 +576,30 @@ function openModal(imageUrl: string) {
     fullscreenModal.classList.remove('hidden');
 }
 
+/**
+ * Main application entry point.
+ * Checks for API Key and initializes the application.
+ */
+// FIX: Corrected function declaration syntax and updated API key handling.
+function initializeApp() {
+    // If key is present, proceed with AI client initialization.
+    try {
+        // FIX: Initialize GoogleGenAI with API key from environment variables.
+        ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    } catch (error) {
+        console.error("AI Initialization Error:", error);
+        alert("Could not initialize the AI client. Your API key might be invalid. Please check the console for details.");
+        generateBtn.disabled = true;
+        // Also stop initialization if the client fails.
+        return;
+    }
 
-if (fullscreenModal && fullscreenImage && closeModalBtn && zoomInBtn && zoomOutBtn) {
-    closeModalBtn.addEventListener('click', closeModal);
-
-    fullscreenModal.addEventListener('click', (e) => {
-        if (e.target === fullscreenModal) {
-            closeModal();
-        }
-    });
-
-    zoomInBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        modalState.zoom += 0.2;
-        fullscreenImage.classList.add('is-zoomed');
-        updateImageTransform();
-    });
-
-    zoomOutBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        modalState.zoom = Math.max(1, modalState.zoom - 0.2);
-        if (modalState.zoom === 1) {
-            fullscreenImage.classList.remove('is-zoomed');
-            modalState.pan.x = 0;
-            modalState.pan.y = 0;
-        }
-        updateImageTransform();
-    });
-
-    fullscreenImage.addEventListener('mousedown', (e) => {
-        if (modalState.zoom <= 1) return;
-        e.preventDefault();
-        modalState.isDragging = true;
-        modalState.start.x = e.clientX - modalState.pan.x;
-        modalState.start.y = e.clientY - modalState.pan.y;
-        fullscreenImage.classList.add('is-grabbing');
-    });
-
-    fullscreenImage.addEventListener('mousemove', (e) => {
-        if (!modalState.isDragging) return;
-        e.preventDefault();
-        modalState.pan.x = e.clientX - modalState.start.x;
-        modalState.pan.y = e.clientY - modalState.start.y;
-        updateImageTransform();
-    });
-    
-    const stopDragging = () => {
-        if (modalState.isDragging) {
-            modalState.isDragging = false;
-            fullscreenImage.classList.remove('is-grabbing');
-        }
-    };
-    
-    window.addEventListener('mouseup', stopDragging);
-    fullscreenImage.addEventListener('mouseleave', stopDragging);
+    // If we've reached this point, the AI client is ready.
+    // Now it's safe to attach all event listeners and set up the UI.
+    updateFormUI();
+    attachEventListeners();
 }
 
 
-// Initial UI setup
-updateFormUI();
+// --- INITIAL APP STARTUP ---
+initializeApp();
