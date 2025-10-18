@@ -6,10 +6,9 @@ import { GoogleGenAI, Type, Modality } from "@google/genai";
 
 // =================================================================================
 // --- API KEY CONFIGURATION ---
-// IMPORTANT: You must replace this placeholder with your own Google AI Studio API key.
-// Get a key from https://aistudio.google.com/app/apikey
+// The user-provided API key is now hardcoded into the application.
 // =================================================================================
-const API_KEY = "YOUR_API_KEY_HERE";
+const API_KEY = "AIzaSyDm1HtfbuGaYKQmYaTvOasvtboGgSc30ZQ";
 
 
 // --- DOM ELEMENT REFERENCES ---
@@ -41,16 +40,17 @@ const errorMessage = document.getElementById('error-message');
 // --- GEMINI API SETUP ---
 let ai: GoogleGenAI | null = null;
 try {
-  // Do not initialize if the key is the placeholder
-  if (API_KEY !== "YOUR_API_KEY_HERE") {
-    ai = new GoogleGenAI({ apiKey: API_KEY });
-  }
+  ai = new GoogleGenAI({ apiKey: API_KEY });
 } catch (error) {
     console.error("AI Initialization Error:", error);
-    // This error is less critical now, but good to have.
-    // The main check happens on form submission.
+    // This is a fatal setup error. Disable the app and show the error panel.
     generateBtn.disabled = true;
     generateBtn.textContent = "Configuration Error";
+    if (errorMessage && errorDisplay && resultsPlaceholder) {
+        resultsPlaceholder.classList.add('hidden');
+        errorMessage.textContent = "The application failed to initialize the AI client. This might be due to a malformed API key in the code.";
+        errorDisplay.classList.remove('hidden');
+    }
 }
 
 
@@ -136,13 +136,6 @@ function attachEventListeners() {
         }
     });
 
-    // API key modal can be closed by clicking the overlay
-    apiKeyModal?.addEventListener('click', (e) => {
-        if (e.target === apiKeyModal) {
-            apiKeyModal.classList.add('hidden');
-        }
-    });
-
     // Fullscreen modal listeners
     if (fullscreenModal && fullscreenImage && closeModalBtn && zoomInBtn && zoomOutBtn) {
         closeModalBtn.addEventListener('click', closeModal);
@@ -200,25 +193,12 @@ function attachEventListeners() {
  */
 async function handleFormSubmit(event: Event) {
     event.preventDefault();
-
-    // CRITICAL: Check for placeholder API Key on submit
-    if (API_KEY === "YOUR_API_KEY_HERE") {
-        apiKeyModal?.classList.remove('hidden');
-        return;
-    }
     
-    // Lazy initialization of AI client if it hasn't been already
+    // Ensure AI client was initialized successfully before proceeding.
     if (!ai) {
-        try {
-            ai = new GoogleGenAI({ apiKey: API_KEY });
-        } catch (error) {
-            console.error("AI Initialization Error on submit:", error);
-            if (errorMessage && errorDisplay) {
-                errorMessage.textContent = "The API key provided appears to be malformed or invalid. Please check the key and try again.";
-                errorDisplay.classList.remove('hidden');
-            }
-            return;
-        }
+        console.error("Attempted to generate, but AI client is not available.");
+        alert("The AI client is not configured correctly. Please check the API key.");
+        return;
     }
 
     // Form validation
@@ -251,13 +231,13 @@ async function handleGeneration() {
 
   } catch (error) {
     console.error("An error occurred during generation:", error);
-    if (errorMessage && errorDisplay) {
+    if (errorMessage && errorDisplay && resultsPlaceholder) {
+        resultsPlaceholder.classList.add('hidden');
         errorMessage.textContent = "The API key might be invalid, expired, or your Google Cloud project may not have billing enabled. Please verify your key is correct and active.";
         errorDisplay.classList.remove('hidden');
     } else {
         alert("An error occurred. Your API key might be invalid or there could be a network issue. Please check the console for details.");
     }
-    resultsPlaceholder?.classList.remove('hidden');
   } finally {
     setLoading(false);
   }
@@ -482,6 +462,9 @@ function setLoading(isLoading: boolean) {
           clearInterval(tipInterval);
           tipInterval = null;
       }
+      if (resultsGrid.innerHTML === '') {
+          resultsPlaceholder?.classList.remove('hidden');
+      }
       loaderTip.textContent = '';
   }
 }
@@ -492,11 +475,11 @@ function setLoading(isLoading: boolean) {
 function displayResults(results: { prompt: string; imageBase64: string }[]) {
   resultsGrid.innerHTML = '';
   if (results.length === 0) {
-      resultsPlaceholder.classList.remove('hidden');
+      resultsPlaceholder?.classList.remove('hidden');
       resultsPanel.classList.remove('has-results');
       return;
   }
-  resultsPlaceholder.classList.add('hidden');
+  resultsPlaceholder?.classList.add('hidden');
   results.forEach(result => {
     const card = createResultCard(result.prompt, result.imageBase64);
     resultsGrid.appendChild(card);
@@ -633,6 +616,8 @@ function openModal(imageUrl: string) {
  * Main application entry point.
  */
 function initializeApp() {
+    // Hide the API key modal by default, as the key is now hardcoded.
+    apiKeyModal?.classList.add('hidden');
     updateFormUI();
     attachEventListeners();
 }
