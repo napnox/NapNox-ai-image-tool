@@ -4,8 +4,13 @@
 */
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 
+// =================================================================================
 // --- IMPORTANT: API KEY CONFIGURATION ---
-// Replace "YOUR_API_KEY_PLACEHOLDER" with your actual Google AI Studio API key.
+// To use this application, you must get a free API key from Google AI Studio.
+// 1. Visit https://aistudio.google.com/app/apikey
+// 2. Click "Create API key"
+// 3. Paste your new key here, replacing the "YOUR_API_KEY_PLACEHOLDER" text.
+// =================================================================================
 const API_KEY = "YOUR_API_KEY_PLACEHOLDER";
 
 

@@ -244,10 +244,15 @@
 
   <div id="api-key-modal" class="modal-overlay hidden">
     <div class="api-key-dialog">
-      <h3>API Key Required</h3>
-      <p>To use NapNox Studio, please provide your Google AI Studio API key.</p>
-      <p>You can get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">aistudio.google.com</a>.</p>
-      <p><strong>Important:</strong> Open the <code>index.tsx</code> file in your project, replace the <code>"YOUR_API_KEY"</code> placeholder with your actual key, and then redeploy the application.</p>
+      <h3>Final Step: Add Your API Key</h3>
+      <p>Welcome to NapNox Studio! To activate the AI features, you need to add your personal Google AI Studio API key.</p>
+      <ol class="setup-steps">
+        <li><strong>Get your key:</strong> Go to <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">aistudio.google.com</a> and click "Create API key".</li>
+        <li><strong>Open the code:</strong> In your project, open the file named <code>index.tsx</code>.</li>
+        <li><strong>Paste your key:</strong> Replace the placeholder text <code>"YOUR_API_KEY_PLACEHOLDER"</code> with your actual key.</li>
+        <li><strong>Deploy again:</strong> Save the file, commit the change to GitHub, and redeploy your application.</li>
+      </ol>
+      <p>This is a one-time setup to connect the app to your own AI account.</p>
     </div>
   </div>
 
