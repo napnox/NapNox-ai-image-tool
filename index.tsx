@@ -244,7 +244,16 @@ async function generateCreativePrompts(): Promise<string[]> {
   const promptDetails = Array.from(form.querySelectorAll('select, textarea'))
     .map(el => {
         const input = el as HTMLSelectElement | HTMLTextAreaElement;
-        const label = form.querySelector(`label[for="${input.id}"]`)?.textContent || input.id;
+        
+        // Fix: Rewrite label text retrieval to be more type-safe.
+        let labelText: string;
+        const labelElement = form.querySelector(`label[for="${input.id}"]`);
+        if (labelElement && labelElement.textContent) {
+            labelText = labelElement.textContent;
+        } else {
+            labelText = input.id;
+        }
+
         if (input.id === 'user-prompt' && (generationSource === 'image' || !input.value.trim())) {
              return null;
         }
@@ -252,10 +261,10 @@ async function generateCreativePrompts(): Promise<string[]> {
             return null;
         }
         if (input.id === 'aspect-ratio') {
-            return `${label}: "${input.value}" (This is a strict requirement).`;
+            return `${labelText}: "${input.value}" (This is a strict requirement).`;
         }
-        return `${label}: "${input.value}"`;
-    }).filter(Boolean).join('\n');
+        return `${labelText}: "${input.value}"`;
+    }).filter((item): item is string => !!item).join('\n'); // Ensure type is narrowed to string[]
     
   const finalPrompt = `Generate ${numVariations.value} distinct and creative prompt variations based on the following details. PRIORITY #1: Each generated prompt MUST strictly adhere to and explicitly mention the requested aspect ratio of ${aspectRatio}. This is not optional.\n\n${promptDetails}`;
   
@@ -277,7 +286,13 @@ async function generateCreativePrompts(): Promise<string[]> {
     }
   });
 
-  const jsonResponse = JSON.parse(response.text);
+  // Fix: Add a guard to ensure response.text exists before parsing.
+  const responseText = response.text;
+  if (!responseText) {
+    throw new Error("AI returned an empty response.");
+  }
+  const jsonResponse = JSON.parse(responseText);
+  
   if (!jsonResponse.prompts || jsonResponse.prompts.length === 0) {
       throw new Error("AI did not return any prompts.");
   }
