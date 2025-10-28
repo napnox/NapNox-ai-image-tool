@@ -286,10 +286,10 @@ async function generateCreativePrompts(): Promise<string[]> {
     }
   });
 
-  // Fix: Add a guard to ensure response.text exists before parsing.
+  // Fix: Add a more robust guard to satisfy the strict TypeScript compiler.
   const responseText = response.text;
-  if (!responseText) {
-    throw new Error("AI returned an empty response.");
+  if (typeof responseText !== 'string' || responseText.trim() === '') {
+    throw new Error("AI returned an empty or invalid response.");
   }
   const jsonResponse = JSON.parse(responseText);
   
