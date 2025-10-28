@@ -351,7 +351,7 @@ async function handleRegenerate(card: HTMLElement, prompt: string) {
         viewBtn.onclick = () => openModal(newImageUrl);
 
         const shareBtn = card.querySelector('.share-btn') as HTMLButtonElement;
-        if (shareBtn && navigator.share) {
+        if (shareBtn && typeof navigator.share === 'function') {
             shareBtn.onclick = () => shareImage(newImageUrl, prompt);
         }
 
@@ -427,12 +427,12 @@ function setLoading(isLoading: boolean) {
   if (isLoading) {
     resultsPanel.classList.remove('has-results');
     resultsPlaceholder?.classList.add('hidden');
-    resultsGrid.innerHTML = '';
+    if (resultsGrid) resultsGrid.innerHTML = '';
     hideError(); // Hide any previous errors when starting a new generation
     
     const showRandomTip = () => {
         const randomIndex = Math.floor(Math.random() * creativeTips.length);
-        loaderTip.textContent = creativeTips[randomIndex];
+        if (loaderTip) loaderTip.textContent = creativeTips[randomIndex];
     };
     showRandomTip();
     tipInterval = window.setInterval(showRandomTip, 3500);
@@ -442,10 +442,10 @@ function setLoading(isLoading: boolean) {
           clearInterval(tipInterval);
           tipInterval = null;
       }
-      if (resultsGrid.innerHTML === '') {
+      if (resultsGrid && resultsGrid.innerHTML === '') {
           resultsPlaceholder?.classList.remove('hidden');
       }
-      loaderTip.textContent = '';
+      if (loaderTip) loaderTip.textContent = '';
   }
 }
 
@@ -453,6 +453,7 @@ function setLoading(isLoading: boolean) {
  * Renders the generated image results in the grid.
  */
 function displayResults(results: { prompt: string; imageBase64: string }[]) {
+  if (!resultsGrid) return;
   resultsGrid.innerHTML = '';
   if (results.length === 0) {
       resultsPlaceholder?.classList.remove('hidden');
@@ -525,7 +526,7 @@ function createResultCard(prompt: string, imageBase64: string): HTMLElement {
   viewBtn.onclick = () => openModal(imageUrl);
 
   const shareBtn = card.querySelector('.share-btn') as HTMLButtonElement;
-  if (navigator.share) {
+  if (typeof navigator.share === 'function') {
     shareBtn.onclick = () => shareImage(imageUrl, prompt);
   } else {
     shareBtn.style.display = 'none';
