@@ -4,12 +4,6 @@
 */
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 
-// =================================================================================
-// --- API KEY CONFIGURATION ---
-// The user-provided API key is now hardcoded into the application.
-// =================================================================================
-const API_KEY = "AIzaSyDm1HtfbuGaYKQmYaTvOasvtboGgSc30ZQ";
-
 
 // --- DOM ELEMENT REFERENCES ---
 const form = document.getElementById('prompt-form') as HTMLFormElement;
@@ -38,20 +32,10 @@ const errorMessage = document.getElementById('error-message');
 
 
 // --- GEMINI API SETUP ---
-let ai: GoogleGenAI | null = null;
-try {
-  ai = new GoogleGenAI({ apiKey: API_KEY });
-} catch (error) {
-    console.error("AI Initialization Error:", error);
-    // This is a fatal setup error. Disable the app and show the error panel.
-    generateBtn.disabled = true;
-    generateBtn.textContent = "Configuration Error";
-    if (errorMessage && errorDisplay && resultsPlaceholder) {
-        resultsPlaceholder.classList.add('hidden');
-        errorMessage.textContent = "The application failed to initialize the AI client. This might be due to a malformed API key in the code.";
-        errorDisplay.classList.remove('hidden');
-    }
-}
+// Fix: Use process.env.API_KEY and assume it's provided, per coding guidelines.
+// This resolves the 'import.meta.env' error and aligns with the requirement
+// to obtain the API key exclusively from the specified environment variable.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
 
 
 // --- APPLICATION STATE & CONSTANTS ---
@@ -194,12 +178,8 @@ function attachEventListeners() {
 async function handleFormSubmit(event: Event) {
     event.preventDefault();
     
-    // Ensure AI client was initialized successfully before proceeding.
-    if (!ai) {
-        console.error("Attempted to generate, but AI client is not available.");
-        alert("The AI client is not configured correctly. Please check the API key.");
-        return;
-    }
+    // Fix: Removed check for AI client existence, as it's now a constant
+    // and assumed to be initialized per guidelines.
 
     // Form validation
     const source = getGenerationSource();
@@ -218,7 +198,7 @@ async function handleFormSubmit(event: Event) {
  * Main function to handle the AI generation process.
  */
 async function handleGeneration() {
-  if (!ai) return; 
+  // Fix: Removed check for AI client existence.
   setLoading(true);
 
   try {
@@ -247,7 +227,7 @@ async function handleGeneration() {
  * Generates a list of creative prompts based on user input.
  */
 async function generateCreativePrompts(): Promise<string[]> {
-  if (!ai) throw new Error("AI client not initialized.");
+  // Fix: Removed check for AI client existence.
 
   const numVariations = document.getElementById('num-variations') as HTMLSelectElement;
   const generationSource = getGenerationSource();
@@ -308,7 +288,7 @@ async function generateCreativePrompts(): Promise<string[]> {
  * Generates a single image based on a prompt and optionally the uploaded image.
  */
 async function generateImage(prompt: string): Promise<{ prompt: string; imageBase64: string }> {
-  if (!ai) throw new Error("AI client not initialized.");
+  // Fix: Removed check for AI client existence.
 
   const textPart = { text: prompt };
   const parts: ( {text: string} | {inlineData: {data: string, mimeType: string}} )[] = [textPart];
@@ -616,7 +596,7 @@ function openModal(imageUrl: string) {
  * Main application entry point.
  */
 function initializeApp() {
-    // Hide the API key modal by default, as the key is now hardcoded.
+    // Hide the API key modal by default, as the key is now handled by env variables.
     apiKeyModal?.classList.add('hidden');
     updateFormUI();
     attachEventListeners();
