@@ -366,7 +366,8 @@ async function handleRegenerate(card: HTMLElement, prompt: string) {
         viewBtn.onclick = () => openModal(newImageUrl);
 
         const shareBtn = card.querySelector('.share-btn') as HTMLButtonElement;
-        if (shareBtn && typeof navigator.share === 'function') {
+        // Fix: Use 'in' operator for robust feature detection to avoid TS warnings.
+        if (shareBtn && 'share' in navigator) {
             shareBtn.onclick = () => shareImage(newImageUrl, prompt);
         }
 
@@ -387,7 +388,8 @@ async function shareImage(url: string, text: string) {
         const blob = await response.blob();
         const file = new File([blob], `napnox-ai-image-${Date.now()}.png`, { type: 'image/png' });
 
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        // Fix: Use 'in' operator for robust feature detection to avoid TS warnings.
+        if ('canShare' in navigator && navigator.canShare({ files: [file] })) {
             await navigator.share({
                 title: 'AI Image from NapNox Studio',
                 text: `Check out this image I created! Prompt: ${text}`,
@@ -541,7 +543,8 @@ function createResultCard(prompt: string, imageBase64: string): HTMLElement {
   viewBtn.onclick = () => openModal(imageUrl);
 
   const shareBtn = card.querySelector('.share-btn') as HTMLButtonElement;
-  if (typeof navigator.share === 'function') {
+  // Fix: Use 'in' operator for robust feature detection to avoid TS warnings.
+  if ('share' in navigator) {
     shareBtn.onclick = () => shareImage(imageUrl, prompt);
   } else {
     shareBtn.style.display = 'none';
