@@ -286,18 +286,18 @@ async function generateCreativePrompts(): Promise<string[]> {
     }
   });
 
-  // FINAL FIX: Use a simple, robust check to ensure the response text exists
-  // before parsing. This satisfies the TypeScript compiler and prevents runtime errors.
+  // FINAL FIX: Use a robust, explicit check to ensure the response text is a valid
+  // string before parsing. This satisfies the strict TypeScript compiler and prevents runtime errors.
   const responseText = response.text;
-  if (!responseText) {
-    throw new Error("AI returned an empty or invalid response.");
+  if (typeof responseText === "string" && responseText.trim().length > 0) {
+    const jsonResponse = JSON.parse(responseText);
+    if (jsonResponse.prompts && Array.isArray(jsonResponse.prompts) && jsonResponse.prompts.length > 0) {
+      return jsonResponse.prompts;
+    }
   }
-  const jsonResponse = JSON.parse(responseText);
-  
-  if (!jsonResponse.prompts || jsonResponse.prompts.length === 0) {
-      throw new Error("AI did not return any prompts.");
-  }
-  return jsonResponse.prompts;
+
+  // If we reach here, the response was invalid.
+  throw new Error("AI returned an empty or invalid response structure.");
 }
 
 /**
